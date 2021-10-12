@@ -3,6 +3,7 @@ services:
   db:
     image: postgres:12-alpine
     environment:
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=wisely_test
     ports:
@@ -12,6 +13,7 @@ services:
       context: .
       dockerfile: ./api/Dockerfile
     environment:
+#      Warning: This string needs to match the environment variables above.
       - DATABASE_CONNECTION_STRING=postgres://postgres:password@db/wisely_test
       - NODE_ENV=development
       - APP_ENV=development
