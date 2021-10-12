@@ -29,7 +29,7 @@ export class Reservation extends Model<Reservation> {
     @Column
     time: String
 
-    @Column
+    @Column({allowNull: false})
     @ForeignKey(() => ReservationInventory)
     inventoryId: number
 
@@ -41,4 +41,19 @@ export class Reservation extends Model<Reservation> {
 
     @UpdatedAt
     updated_at: string
+
+    async createReservationFromInventory(reservationInventory: ReservationInventory, data, t) {
+    }
+
+    static async createReservationFromInventory(reservationInventory: ReservationInventory, data, t) {
+        const reservation:Reservation = await Reservation.create({
+            name: data.name,
+            email: data.email,
+            partySize: data.partySize,
+            date: reservationInventory.reservationDate,
+            time: reservationInventory.reservationTime,
+            inventoryId: reservationInventory.id
+        }, t);
+        return reservation;
+    }
 }

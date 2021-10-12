@@ -51,7 +51,7 @@ export class ReservationInventoryController {
             data.maxPartySize = parseInt(req.body.maxPartySize);
             data.availabilityCount = parseInt(req.body.availabilityCount);
             data.restaurantId = parseInt(req.body.restaurantId);
-            const times: String[] = this.getEvery15MinInterval(data.startTime, data.endTime);
+            const times: String[] = ReservationInventoryController.getEvery15MinInterval(data.startTime, data.endTime);
             // TODO: Centralize getting sequelize db connection
             //Setup connection for sequelize transactions
             const sequelize = new Sequelize(process.env.DATABASE_CONNECTION_STRING, {
@@ -99,7 +99,7 @@ export class ReservationInventoryController {
         return res;
     }
 
-    private getEvery15MinInterval(startTime: Date, endTime: Date) {
+    private static getEvery15MinInterval(startTime: Date, endTime: Date) {
         //TODO: Add in logic to parse times
         return ["3:00", "3:15"];
     }

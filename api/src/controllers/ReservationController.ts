@@ -3,11 +3,12 @@ import { Request, Response } from 'express'
 import {Reservation, ReservationInventory} from "../models";
 import {Sequelize} from "sequelize-typescript";
 import * as models from "../models";
+import {Transaction} from "sequelize";
 
 @Controller('reservation')
 export class ReservationController {
     @Post('/')
-    private async post(req: Request, res: Response) {
+    async post(req: Request, res: Response) {
         interface PostReservationRequest {
             name: string;
             email: string;
@@ -21,37 +22,27 @@ export class ReservationController {
             logging: process.env.LOG === 'debug' ? console.log : false,
             models: Object.keys(models).map(k => models[k]),
         })
+        const data: PostReservationRequest =  req.body;
+        data.name = req.body.name;
+        data.email = req.body.email;
+        data.inventoryId = parseInt(req.body.inventoryId);
+        data.partySize = parseInt(req.body.partySize);
         const t = await sequelize.transaction();
         try {
             // TODO: Dedicated parse functions/parse library
-            const data: PostReservationRequest =  req.body;
-            data.name = req.body.name;
-            data.email = req.body.email;
-            data.inventoryId = parseInt(req.body.inventoryId);
-            console.log(data.inventoryId)
-            data.partySize = parseInt(req.body.partySize);
             // Check that the reservation inventory is there and has availability
-            const reservationInventory: ReservationInventory = await ReservationInventory.findByPk(data.inventoryId,
-                {transaction: t,
-                        lock: t.LOCK});
-            if (reservationInventory.availabilityCount > 0 && reservationInventory.maxPartySize >= data.partySize) {
-                await ReservationInventory.update({availabilityCount: reservationInventory.availabilityCount - 1},
-                    { where: { id: reservationInventory.id}, transaction: t})
-                const newReservation = await Reservation.create({
-                    name: data.name,
-                    email: data.email,
-                    partySize: data.partySize,
-                    date: reservationInventory.reservationDate,
-                    time: reservationInventory.reservationTime
-                }, t)
+            const reservationInventory: ReservationInventory = await ReservationInventory.getAndLock(data.inventoryId, t);
+            if (this.validReservation(reservationInventory, data.partySize)) {
+                await ReservationInventory.removeAvailableInventory(reservationInventory, t)
+                const newReservation:Reservation = await Reservation.createReservationFromInventory(reservationInventory, data, t)
                 await t.commit();
                 console.log("Added reservation")
                 return res.status(200).json(newReservation);
             } else {
                 // If the reservation doesn't match the criteria, give up the lock on the row.
                 t.commit();
+                return res.status(400).send("The reservation is not available/doesn't fit party requirements");
             }
-            return res.status(400).send("The reservation is not available/doesn't fit party requirements");
         } catch (e) {
             console.log(e)
             await t.rollback()
@@ -89,5 +80,10 @@ export class ReservationController {
             console.log(e)
             return res.sendStatus(500)
         }
+    }
+    protected validReservation(reservationInventory: ReservationInventory, partySize: number) {
+        return reservationInventory != null &&
+            reservationInventory.availabilityCount > 0 &&
+            reservationInventory.maxPartySize >= partySize
     }
 }

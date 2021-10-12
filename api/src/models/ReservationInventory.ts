@@ -39,4 +39,13 @@ export class ReservationInventory extends Model<ReservationInventory> {
 
     @UpdatedAt
     updated_at: string
+
+    static async removeAvailableInventory(reservationInventory: ReservationInventory, t) {
+        await this.update({availabilityCount: reservationInventory.availabilityCount - 1}, { where: { id: reservationInventory.id}, transaction: t})
+    }
+
+    static async getAndLock(reservationInventoryId: number, transaction) {
+        const rI:ReservationInventory = await this.findByPk(reservationInventoryId, {transaction: transaction, lock: transaction.LOCK});
+        return rI;
+    }
 }
