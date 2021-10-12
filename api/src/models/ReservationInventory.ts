@@ -1,4 +1,5 @@
 import {
+    BelongsTo,
     Column,
     CreatedAt,
     DeletedAt, ForeignKey,
@@ -14,12 +15,21 @@ export class ReservationInventory extends Model<ReservationInventory> {
     @Column({ autoIncrement: true })
     id: number
 
-    @Column
+    @Column({allowNull: false})
     @ForeignKey(() => Restaurant)
-    restaurant: number
+    restaurantId: number
 
-    @Column
-    availabilityCount
+    @Column({allowNull: false, validate: {min: 0}})
+    availabilityCount: number
+
+    @Column({allowNull: false})
+    reservationDate: Date
+
+    @Column({allowNull: false})
+    reservationTime: String
+
+    @Column({allowNull: false, validate: {min: 1}})
+    maxPartySize: number
 
     @DeletedAt
     deleted_at: string

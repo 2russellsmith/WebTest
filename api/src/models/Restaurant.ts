@@ -13,10 +13,10 @@ export class Restaurant extends Model<Restaurant> {
   @Column({ autoIncrement: true })
   id: number
 
-  @Column
+  @Column({allowNull: false})
   name: string
 
-  @Column
+  @Column({allowNull: false})
   address: string
 
   @DeletedAt
